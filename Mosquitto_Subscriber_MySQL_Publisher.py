@@ -4,7 +4,7 @@ import sys
 import json
 
 # User variable for MySQL DATABASE name
-myGatewayID = "Office"
+myGatewayID = "office"
 # it is expected that this Database will already contain one table called sensors.  Create that table inside the Database with this command:
 # CREATE TABLE sensors(device_id char(23) NOT NULL, transmission_count INT NOT NULL, battery_level FLOAT NOT NULL, type INT NOT NULL, node_id INT NOT NULL, rssi INT NOT NULL, last_heard TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);
 
