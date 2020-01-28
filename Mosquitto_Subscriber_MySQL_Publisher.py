@@ -3,8 +3,12 @@ import pymysql.cursors
 import sys
 import json
 
-# User variable for MySQL DATABASE name
-myGatewayID = "office"
+# User variable for Gateway ID
+myGatewayID = "30:AE:A4:DA:3F:BC"
+
+#User variable for database name
+dbName = "office"
+
 # it is expected that this Database will already contain one table called sensors.  Create that table inside the Database with this command:
 # CREATE TABLE sensors(device_id char(23) NOT NULL, transmission_count INT NOT NULL, battery_level FLOAT NOT NULL, type INT NOT NULL, node_id INT NOT NULL, rssi INT NOT NULL, last_heard TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);
 
@@ -23,7 +27,7 @@ def on_connect(client, userdata, flags, rc):
     print("MQTT Client Connected")
     client.subscribe("gateway/"+myGatewayID+"/sensor/#")
     try:
-        db = pymysql.connect(host=mysqlHost, user=mysqlUser, password=mysqlPassword, db=myGatewayID, charset='utf8mb4', cursorclass=pymysql.cursors.DictCursor)
+        db = pymysql.connect(host=mysqlHost, user=mysqlUser, password=mysqlPassword, db=dbName, charset='utf8mb4', cursorclass=pymysql.cursors.DictCursor)
         db.close()
         print("MySQL Client Connected")
     except:
@@ -36,7 +40,6 @@ def sensor_update(db, payload):
     deviceQuery = "EXISTS(SELECT * FROM sensors WHERE device_id = '%s')"%(payload['sensor_id'])
     cursor.execute("SELECT "+deviceQuery)
     data = cursor.fetchone()
-    print("exists result for device_id: "+payload["sensor_id"] + " was: "+ str(data[deviceQuery]))
     if(data[deviceQuery] >= 1):
         updateRequest = "UPDATE sensors SET transmission_count = %i, battery_level = %.2f, rssi = %i, last_heard = CURRENT_TIMESTAMP WHERE device_id = '%s'" % (payload['data']['transmission_count'], payload['data']['battery_level'], payload['data']['rssi'], payload['sensor_id'])
         cursor.execute(updateRequest)
@@ -92,12 +95,14 @@ def log_telemetry(db, payload):
 
 # The callback for when a PUBLISH message is received from the MQTT Broker.
 def on_message(client, userdata, msg):
+    print("Transmission received")
     payload = json.loads((msg.payload).decode("utf-8"))
     if 'sensor_id' in payload and 'data' in payload:
         if 'transmission_count' in payload['data'] and 'battery_level' in payload['data'] and 'type' in payload['data'] and 'node_id' in payload['data'] and 'rssi' in payload['data']:
-            db = pymysql.connect(host="localhost", user="python", password="Spunky11", db="sensors",charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor)
+            db = pymysql.connect(host="localhost", user=mysqlUser, password=mysqlPassword, db=dbName,charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor)
             sensor_update(db,payload)
             log_telemetry(db,payload)
+            print('data logged')
             db.close()
 
 # Connect the MQTT Client
